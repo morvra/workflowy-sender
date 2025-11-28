@@ -18,8 +18,7 @@
     --app-max-width: 600px;
   }
 
-  /* 🌟 修正1: iOSの自動拡大対策としてtouch-action: manipulationはそのまま維持 */
-  * { box-sizing: border-box; touch-action: manipulation; } 
+  * { box-sizing: border-box; touch-action: manipulation; }
   
   body {
     margin: 0;
@@ -474,9 +473,9 @@
 
 <script>
 /**
- * Workflowy Sender v6.9
- * 修正: 1. 自動フォーカス処理をシンプルなfocus()に戻す（iOSの制限のため他の確実な方法がない）
- * 修正: 2. 送信後のfocus()を削除し、キーボードが表示されている場合は引っ込まないようにする
+ * Workflowy Sender v7.0
+ * 修正: 1. 送信ボタンのmousedownでpreventDefault()を呼び出し、iOSでのキーボード非表示を抑制
+ * 修正: 2. 送信完了/エラー時にfocus()を再実行し、確実にtextareaにカーソルを戻す
  */
 
 const STORAGE_KEY = 'workflowy_sender_config_v4';
@@ -544,18 +543,24 @@ function init() {
   applyTemplate(config.templates[0]);
   applyFontSize();
   
-  // 🌟 修正1: 自動フォーカス処理 (iOSの制限により、ユーザー操作なしでの自動起動は確約できませんが、これが標準的な方法です)
+  // 起動時の自動フォーカス（iOSの制限により、ユーザー操作なしでの自動起動は確約できません）
   if (config.apiKey) {
-    // DOMが読み込まれた直後にフォーカスを試みる
     dom.editorMain.focus(); 
   } else {
-    // APIキーがない場合は設定画面を開く
     openOptions();
   }
 
 
   // イベントリスナー設定
   dom.btnSend.addEventListener('click', handleSend);
+  
+  // 🌟 修正1: iOSでのボタンタップによるキーボード非表示を防ぐ
+  // ボタンのmousedownイベントでpreventDefault()を呼ぶことで、
+  // focusの移動とtextareaへのblurイベントの発生を抑制します。
+  dom.btnSend.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
+  
   dom.btnClear.addEventListener('click', () => {
     dom.editorMain.value = '';
     dom.editorMain.focus();
@@ -819,7 +824,6 @@ function closeOptions() {
   dom.modal.classList.remove('active');
   
   if (config.apiKey) {
-    // 設定を閉じたらフォーカスを戻す（キーボード再起動）
     dom.editorMain.focus();
   }
 }
@@ -948,7 +952,7 @@ async function handleSend() {
     }
 
     showToast('送信しました！');
-    // テンプレートを適用する際、applyTemplate内でfocus()が実行される
+    // 成功時：テンプレート適用とフォーカス（キーボード維持）
     applyTemplate(config.templates[0]); 
 
   } catch (error) {
@@ -958,10 +962,8 @@ async function handleSend() {
     dom.btnSend.disabled = false;
     dom.spinner.style.display = 'none';
     
-    // 🌟 修正2: 送信後のキーボード維持のため、focus()を削除。
-    // キーボードが表示中の場合、blur()が実行されなければ基本的に維持されます。
-    // applyTemplate()内でfocus()が実行されているため、ここでは不要と判断します。
-    // dom.editorMain.focus(); // 削除
+    // 🌟 修正2: 処理の完了を待ってから、確実にフォーカスを戻す
+    dom.editorMain.focus();
   }
 }
 
