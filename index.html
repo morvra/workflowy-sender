@@ -600,21 +600,36 @@ function init() {
 function adjustBottomBarPosition() {
   if (!window.visualViewport || !dom.bottomBar || !dom.mainArea || !dom.appContainer) return;
   
-  const visualHeight = window.visualViewport.height;
-  const innerHeight = window.innerHeight;
-  const footerHeightCSS = getComputedStyle(document.documentElement).getPropertyValue('--footer-height');
-  const footerHeight = parseFloat(footerHeightCSS.replace('px', ''));
-  
+  const innerHeight = window.innerHeight; // レイアウトビューポートの高さ
+  const visualHeight = window.visualViewport.height; // ビジュアルビューポートの高さ
+  const visualTop = window.visualViewport.offsetTop; // ビジュアルビューポートのYオフセット
+
+  // bottom-barの固定された高さを取得（CSS変数ではなく、安定した値を使用）
+  const footerHeight = 60; // CSS変数: --footer-height の値（60px）
+
+  // キーボードが出現しているかチェック (innerHeightとvisualHeightに大きな差がある)
   const isKeyboardOpen = Math.abs(visualHeight - innerHeight) > 50;
 
   if (isKeyboardOpen) {
-    const kbHeight = innerHeight - visualHeight;
+    // キーボードが開いている場合: bottom-bar をキーボードの上端に配置する
     
-    dom.bottomBar.style.bottom = `${kbHeight}px`;
+    // キーボードの高さは `innerHeight - visualHeight` で概算できるが、
+    // iOS/Safariで最も安定するのは、レイアウトビューポートの底から visualViewport の底までの距離。
+    // visualHeight はキーボードが出た後のビューポートの高さを示す。
+    // bottom-bar の新しい bottom の値 = レイアウトビューポートの高さ - (ビジュアルビューポートの高さ + ビジュアルビューポートのオフセット)
+    
+    // キーボードの高さ
+    const keyboardHeight = innerHeight - visualHeight - visualTop;
+    
+    // bottom-bar の bottom 位置をキーボードの高さに設定
+    dom.bottomBar.style.bottom = `${keyboardHeight}px`;
 
-    dom.mainArea.style.paddingBottom = `${kbHeight + footerHeight + 15}px`;
+    // メインエディタエリアのパディングを調整
+    // bottom-bar の高さ + キーボードの高さ + 必要なマージン
+    dom.mainArea.style.paddingBottom = `${keyboardHeight + footerHeight + 15}px`;
     
   } else {
+    // キーボードが隠れた状態 (通常の状態)
     dom.bottomBar.style.bottom = '0';
     dom.mainArea.style.paddingBottom = `calc(15px + var(--footer-height))`;
   }
