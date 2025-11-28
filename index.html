@@ -18,7 +18,8 @@
     --app-max-width: 600px;
   }
 
-  * { box-sizing: border-box; touch-action: manipulation; }
+  /* 🌟 修正1: iOSの自動拡大対策としてtouch-action: manipulationはそのまま維持 */
+  * { box-sizing: border-box; touch-action: manipulation; } 
   
   body {
     margin: 0;
@@ -98,9 +99,6 @@
     -webkit-user-select: text;
     user-select: text;
     -webkit-tap-highlight-color: transparent;
-    
-    /* 🌟 修正1: iOSの自動拡大を抑制するため、font-sizeを16px以上にする（現在は16pxでOK） */
-    /* 16px未満だとiOSがテキスト入力時に自動でビューポートを拡大するため、16pxを維持 */
   }
 
   #editor-main {
@@ -476,9 +474,9 @@
 
 <script>
 /**
- * Workflowy Sender v6.8
- * 修正: 1. iOSの自動拡大抑制のためmetaタグとCSSを調整
- * 修正: 2. 起動時の自動フォーカス処理をrequestAnimationFrameベースに変更
+ * Workflowy Sender v6.9
+ * 修正: 1. 自動フォーカス処理をシンプルなfocus()に戻す（iOSの制限のため他の確実な方法がない）
+ * 修正: 2. 送信後のfocus()を削除し、キーボードが表示されている場合は引っ込まないようにする
  */
 
 const STORAGE_KEY = 'workflowy_sender_config_v4';
@@ -546,12 +544,10 @@ function init() {
   applyTemplate(config.templates[0]);
   applyFontSize();
   
-  // 🌟 修正2: requestAnimationFrame を使った自動フォーカス処理
+  // 🌟 修正1: 自動フォーカス処理 (iOSの制限により、ユーザー操作なしでの自動起動は確約できませんが、これが標準的な方法です)
   if (config.apiKey) {
-    // 描画フレームが終わるのを待ってからフォーカスを試みる (より確実性が高い)
-    requestAnimationFrame(() => {
-        dom.editorMain.focus();
-    });
+    // DOMが読み込まれた直後にフォーカスを試みる
+    dom.editorMain.focus(); 
   } else {
     // APIキーがない場合は設定画面を開く
     openOptions();
@@ -823,10 +819,8 @@ function closeOptions() {
   dom.modal.classList.remove('active');
   
   if (config.apiKey) {
-    // 描画フレームが終わるのを待ってからフォーカスを試みる (より確実性が高い)
-    requestAnimationFrame(() => {
-        dom.editorMain.focus();
-    });
+    // 設定を閉じたらフォーカスを戻す（キーボード再起動）
+    dom.editorMain.focus();
   }
 }
 
@@ -954,7 +948,8 @@ async function handleSend() {
     }
 
     showToast('送信しました！');
-    applyTemplate(config.templates[0]);
+    // テンプレートを適用する際、applyTemplate内でfocus()が実行される
+    applyTemplate(config.templates[0]); 
 
   } catch (error) {
     console.error('送信失敗:', error);
@@ -962,7 +957,11 @@ async function handleSend() {
   } finally {
     dom.btnSend.disabled = false;
     dom.spinner.style.display = 'none';
-    dom.editorMain.focus();
+    
+    // 🌟 修正2: 送信後のキーボード維持のため、focus()を削除。
+    // キーボードが表示中の場合、blur()が実行されなければ基本的に維持されます。
+    // applyTemplate()内でfocus()が実行されているため、ここでは不要と判断します。
+    // dom.editorMain.focus(); // 削除
   }
 }
 
