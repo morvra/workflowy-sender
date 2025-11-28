@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Workflowy Sender</title>
 <style>
   :root {
@@ -97,9 +97,10 @@
     padding: 0;
     -webkit-user-select: text;
     user-select: text;
-    
-    /* 🌟 修正1: iOSでのタップ時の点滅（ハイライト）を無効化 */
     -webkit-tap-highlight-color: transparent;
+    
+    /* 🌟 修正1: iOSの自動拡大を抑制するため、font-sizeを16px以上にする（現在は16pxでOK） */
+    /* 16px未満だとiOSがテキスト入力時に自動でビューポートを拡大するため、16pxを維持 */
   }
 
   #editor-main {
@@ -475,9 +476,9 @@
 
 <script>
 /**
- * Workflowy Sender v6.7
- * 修正: 1. 点滅解消のため -webkit-tap-highlight-color: transparent をCSSに追加
- * 修正: 2. 起動時の自動フォーカス処理を調整
+ * Workflowy Sender v6.8
+ * 修正: 1. iOSの自動拡大抑制のためmetaタグとCSSを調整
+ * 修正: 2. 起動時の自動フォーカス処理をrequestAnimationFrameベースに変更
  */
 
 const STORAGE_KEY = 'workflowy_sender_config_v4';
@@ -545,17 +546,14 @@ function init() {
   applyTemplate(config.templates[0]);
   applyFontSize();
   
-  // 🌟 修正2: 自動フォーカス処理を調整
-  // iOS Safariはユーザーのジェスチャーがないとキーボードを起動させないことが多いです。
-  // DOMContentLoadedの直後ではなく、少し遅延させてフォーカスを試みます。
-  // また、`if (!config.apiKey)` の場合は設定モーダルを開くため、自動フォーカスをスキップします。
+  // 🌟 修正2: requestAnimationFrame を使った自動フォーカス処理
   if (config.apiKey) {
-    // ユーザー設定が存在する場合のみ、起動時のフォーカスを試みる
-    setTimeout(() => {
+    // 描画フレームが終わるのを待ってからフォーカスを試みる (より確実性が高い)
+    requestAnimationFrame(() => {
         dom.editorMain.focus();
-    }, 500); 
+    });
   } else {
-    // APIキーがない場合は設定画面を開き、フォーカスはしない
+    // APIキーがない場合は設定画面を開く
     openOptions();
   }
 
@@ -818,16 +816,17 @@ function openOptions() {
   renderTemplateItems();
   dom.modal.classList.add('active');
   
-  // 設定画面が開いたらエディタのフォーカスを解除
   dom.editorMain.blur(); 
 }
 
 function closeOptions() {
   dom.modal.classList.remove('active');
   
-  // 設定を閉じたらエディタにフォーカスを戻す（キーボード再起動）
   if (config.apiKey) {
-    dom.editorMain.focus();
+    // 描画フレームが終わるのを待ってからフォーカスを試みる (より確実性が高い)
+    requestAnimationFrame(() => {
+        dom.editorMain.focus();
+    });
   }
 }
 
