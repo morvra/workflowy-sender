@@ -474,8 +474,6 @@
 <script>
 /**
  * Workflowy Sender v7.0
- * 修正: 1. 送信ボタンのmousedownでpreventDefault()を呼び出し、iOSでのキーボード非表示を抑制
- * 修正: 2. 送信完了/エラー時にfocus()を再実行し、確実にtextareaにカーソルを戻す
  */
 
 const STORAGE_KEY = 'workflowy_sender_config_v4';
@@ -544,10 +542,17 @@ function init() {
   applyFontSize();
   
   // 修正1: 起動時の自動フォーカスを維持 (ブラウザの許可に依存)
-  setTimeout(() => dom.editorMain.focus(), 300); // 念のため時間を少し長く
+  setTimeout(() => dom.editorMain.focus(), 300); 
 
   // イベントリスナー設定
   dom.btnSend.addEventListener('click', handleSend);
+  
+  // 🌟 キーボード非表示を防ぐ修正を再追加 
+  // mousedownでpreventDefault()を呼び出し、ボタンへのフォーカス移動とtextareaのblurを抑制する
+  dom.btnSend.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+  });
+  
   dom.btnClear.addEventListener('click', () => {
     dom.editorMain.value = '';
     dom.editorMain.focus();
@@ -585,10 +590,9 @@ function init() {
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', adjustBottomBarPosition);
     
-    // 初期化時にも一度実行
     adjustBottomBarPosition();
     
-    // 🌟 新規追加: アプリ再開時/起動時のレイアウト確定を待つため、遅延させて再調整する
+    // アプリ再開時のレイアウト確定を待つため、遅延させて再調整する
     setTimeout(adjustBottomBarPosition, 500); 
   }
 }
