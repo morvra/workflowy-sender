@@ -368,6 +368,7 @@
   @supports (padding: max(0px)) {
     .bottom-bar {
       padding-bottom: max(8px, env(safe-area-inset-bottom));
+      bottom: calc(env(safe-area-inset-bottom) + 0px);
     }
   }
 
@@ -546,9 +547,6 @@ function init() {
   applyTemplate(config.templates[0]);
   applyFontSize();
   
-  // 修正1: 起動時の自動フォーカスを維持 (ブラウザの許可に依存)
-  setTimeout(() => dom.editorMain.focus(), 300); 
-
   // イベントリスナー設定
   dom.btnSend.addEventListener('click', handleSend);
   
@@ -593,14 +591,45 @@ function init() {
   
   // 修正: キーボード出現時の動的調整ロジックをバインド
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', adjustBottomBarPosition);
+    window.visualViewport.addEventListener('resize', debouncedAdjustBottomBarPosition);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     adjustBottomBarPosition();
     
     // アプリ再開時のレイアウト確定を待つため、遅延させて再調整する
     setTimeout(adjustBottomBarPosition, 500); 
   }
+
+  // 修正: ページロード完了後にfocusを確実に実行
+  window.addEventListener('load', () => {
+    dom.editorMain.focus();
+    dom.editorMain.select(); // iOSでキーボードを強制表示するためのselect追加
+  });
 }
+
+/**
+ * 修正: PWA復帰時にfocusとレイアウトを再調整
+ */
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    dom.editorMain.focus();
+    dom.editorMain.select();
+    adjustBottomBarPosition();
+  }
+}
+
+/**
+ * 修正: debounce関数を追加してresizeイベントの連続呼び出しを防ぐ
+ */
+function debounce(func, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
+  };
+}
+
+const debouncedAdjustBottomBarPosition = debounce(adjustBottomBarPosition, 200);
 
 /**
  * 修正: キーボードの出現を検知し、bottom-barの位置を動的に調整する（iOS PWA再開対策）
@@ -616,24 +645,26 @@ function adjustBottomBarPosition() {
   const footerHeight = parseFloat(footerHeightCSS.replace('px', ''));
   
   // innerHeight (レイアウトビューポート) がキーボードによって調整されることを前提とする。
-  const isKeyboardOpen = (innerHeight - visualHeight) > 50; 
+  const isKeyboardOpen = (innerHeight - visualHeight) > 100; // 閾値を上げて誤検知を防ぐ
 
-  if (isKeyboardOpen) {
-    // bottom-bar がレイアウトビューポートの底からどれだけ離れるべきか
-    const offsetFromLayoutBottom = innerHeight - (window.visualViewport.offsetTop + visualHeight);
-    
-    // 🌟 修正: transitionを一時的に無効化し、位置合わせのラグを減らす
-    dom.bottomBar.style.transition = 'none';
-    
-    dom.bottomBar.style.bottom = `${offsetFromLayoutBottom}px`;
-    dom.mainArea.style.paddingBottom = `${offsetFromLayoutBottom + footerHeight + 15}px`;
-    
-  } else {
-    // 🌟 修正: transitionを戻す
-    dom.bottomBar.style.transition = 'bottom 0.2s ease-out';
-    dom.bottomBar.style.bottom = '0';
-    dom.mainArea.style.paddingBottom = `calc(15px + var(--footer-height))`;
-  }
+  requestAnimationFrame(() => { // スタイル更新をフレーム同期でちらつき防止
+    if (isKeyboardOpen) {
+      // bottom-bar がレイアウトビューポートの底からどれだけ離れるべきか
+      const offsetFromLayoutBottom = innerHeight - (window.visualViewport.offsetTop + visualHeight);
+      
+      // 🌟 修正: transitionを一時的に無効化し、位置合わせのラグを減らす
+      dom.bottomBar.style.transition = 'none';
+      
+      dom.bottomBar.style.bottom = `calc(${offsetFromLayoutBottom}px + env(safe-area-inset-bottom))`;
+      dom.mainArea.style.paddingBottom = `calc(${offsetFromLayoutBottom + footerHeight + 15}px + env(safe-area-inset-bottom))`;
+      
+    } else {
+      // 🌟 修正: transitionを戻す
+      dom.bottomBar.style.transition = 'bottom 0.2s ease-out';
+      dom.bottomBar.style.bottom = 'calc(env(safe-area-inset-bottom) + 0px)';
+      dom.mainArea.style.paddingBottom = `calc(15px + var(--footer-height) + env(safe-area-inset-bottom))`;
+    }
+  });
 }
 
 function updateCharCount() {
@@ -1005,6 +1036,15 @@ if (dom.templatesMenu) {
       dom.templatesMenu.classList.remove('active');
     }
   });
+}
+
+// 修正: debounce関数定義（上部に移動済み）
+function debounce(func, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), delay);
+  };
 }
 </script>
 </body>
