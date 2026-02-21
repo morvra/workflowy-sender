@@ -1,1051 +1,1186 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="icon" type="image/png" sizes="32x32" href="./icon.png">
-<link rel="icon" type="image/png" sizes="16x16" href="./icon.png">
-<link rel="apple-touch-icon" sizes="180x180" href="./icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkFlowy Quick Send</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-<title>Workflowy Sender</title>
+<!-- Favicon & PWA -->
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WF Send">
 
 <style>
-  :root {
-    --bg-color: #f0f2f5;
-    --app-bg: #ffffff;
-    --text-color: #333;
-    --border-color: #ddd;
-    --primary-color: #2b2b2b;
-    --accent-color: #007bff;
-    --danger-color: #dc3545;
-    --header-height: 40px;
-    --footer-height: 60px;
-    --app-max-width: 600px;
-  }
+/* ==============================
+   THEME VARIABLES
+   ============================== */
+[data-theme="dark"] {
+  --bg:          #0e0e11;
+  --shell:       #111115;
+  --surface:     #16161b;
+  --surface2:    #1e1e26;
+  --surface3:    #26262f;
+  --border:      #2e2e3a;
+  --border-hi:   #3e3e52;
+  --accent:      #7c6af7;
+  --accent-dim:  #4d43a3;
+  --accent-glow: rgba(124,106,247,0.15);
+  --success:     #4ade9a;
+  --error:       #f87171;
+  --warn:        #fbbf24;
+  --text:        #e2e2f0;
+  --text-dim:    #7878a0;
+  --text-faint:  #44445a;
+  --scroll:      #2e2e3a;
+}
+[data-theme="light"] {
+  --bg:          #f1f1f6;
+  --shell:       #e8e8f0;
+  --surface:     #ffffff;
+  --surface2:    #f4f4f8;
+  --surface3:    #ebebf2;
+  --border:      #d4d4e4;
+  --border-hi:   #b0b0cc;
+  --accent:      #5f4fe8;
+  --accent-dim:  #a99cf5;
+  --accent-glow: rgba(95,79,232,0.1);
+  --success:     #15803d;
+  --error:       #dc2626;
+  --warn:        #b45309;
+  --text:        #18182e;
+  --text-dim:    #50507a;
+  --text-faint:  #9898bb;
+  --scroll:      #c8c8dc;
+}
 
-  * { box-sizing: border-box; touch-action: manipulation; }
-  
-  body {
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    height: 100vh; 
-    display: flex;
-    justify-content: center;
-    position: relative; 
-    overflow: hidden; 
-  }
+/* ==============================
+   BASE
+   ============================== */
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; }
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  transition: background 0.2s;
+}
 
-  .app-container {
-    width: 100%;
-    max-width: var(--app-max-width);
-    height: 100%; 
-    background-color: var(--app-bg);
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
-  }
+/* ==============================
+   MAX-WIDTH SHELL
+   ============================== */
+.app {
+  width: 100%;
+  max-width: 780px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--shell);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  box-shadow: 0 0 60px rgba(0,0,0,0.12);
+  transition: background 0.2s, border-color 0.2s;
+}
 
-  /* --- Header --- */
-  .header {
-    height: var(--header-height);
-    background: var(--app-bg);
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    flex-shrink: 0;
-    z-index: 10;
-  }
+/* ==============================
+   TOP BAR
+   ============================== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
 
-  .app-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--primary-color);
-  }
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  user-select: none;
+}
 
-  .char-count {
-    font-size: 12px;
-    color: #888;
-  }
+.sep { width:1px; height:18px; background:var(--border); flex-shrink:0; }
 
-  /* --- Main Editor Area --- */
-  .main-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-    padding-bottom: calc(15px + var(--footer-height)); 
-    background: var(--app-bg);
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch;
-  }
+.dest-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
 
-  .editor-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
+.dest-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  max-width: 200px;
+  /* Uniform height: match buttons */
+  height: 30px;
+}
+.dest-select:focus { border-color: var(--accent); }
 
-  textarea {
-    width: 100%;
-    border: none;
-    outline: none;
-    resize: none;
-    font-family: inherit;
-    background: transparent;
-    display: block;
-    padding: 0;
-    -webkit-user-select: text;
-    user-select: text;
-    -webkit-tap-highlight-color: transparent;
-  }
+.topbar-space { flex:1; }
 
-  #editor-main {
-    flex: 1;
-    font-size: 16px; 
-    line-height: 1.6;
-  }
+.status-msg {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-msg.show    { opacity:1; }
+.status-msg.ok      { color:var(--success); background:rgba(74,222,154,0.08); }
+.status-msg.err     { color:var(--error);   background:rgba(248,113,113,0.08); }
+.status-msg.loading { color:var(--text-dim); }
 
-  /* --- Bottom Bar --- */
-  .bottom-bar {
-    height: var(--footer-height);
-    background: #f8f9fa;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 10px;
-    flex-shrink: 0;
-    gap: 8px;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    max-width: var(--app-max-width);
-    z-index: 100;
-    transition: bottom 0.2s ease-out; 
-  }
+/* ── Unified button height: 30px ── */
+.sq-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 30px; height: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.sq-btn:hover { border-color:var(--border-hi); color:var(--text); }
+.sq-btn svg { width:14px; height:14px; }
 
-  .btn-group { 
-    display: flex; 
-    gap: 8px;
-    align-items: center;
-  }
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 0 11px;
+  height: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.icon-btn:hover { border-color:var(--accent); color:var(--accent); }
+.icon-btn svg   { width:13px; height:13px; flex-shrink:0; }
 
-  .btn {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 15px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.2s;
-  }
-  
-  .btn-primary { background: var(--primary-color); color: #fff; }
-  .btn-primary:active { opacity: 0.8; }
-  .btn-primary:disabled { background: #999; cursor: not-allowed; }
-  
-  .btn-danger { background: transparent; color: var(--danger-color); }
-  .btn-secondary { background: transparent; color: #555; }
-  .btn-icon { background: transparent; color: #555; padding: 8px; }
+/* ==============================
+   TEMPLATE BAR
+   ============================== */
+.tplbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  min-height: 34px;
+  transition: background 0.2s;
+}
+.tplbar-lbl {
+  font-size: 9px; color:var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.12em; flex-shrink:0;
+}
+.tpl-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+}
+.tpl-chip:hover { border-color:var(--accent-dim); color:var(--accent); background:var(--accent-glow); }
+.tpl-chip.is-default {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+.tpl-chip svg { width:10px; height:10px; opacity:0.8; }
 
-  @media (max-width: 600px) {
-    .btn-text { display: none; }
-    .btn { padding: 8px; font-size: 16px; }
-    .bottom-bar {
-      max-width: 100%; 
-    }
-  }
+/* ==============================
+   EDITOR
+   ============================== */
+.editor-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  transition: background 0.2s;
+}
 
-  @media (min-width: 601px) {
-    .btn-text { display: none; }
-    .btn-icon { display: inline; }
-    .bottom-bar {
-      flex-wrap: nowrap;
-    }
-  }
+/* First-line accent bar — height updated via JS when font size changes */
+.parent-line-bar {
+  position: absolute;
+  left:0; top:18px; right:0;
+  height: 25.5px; /* default: 15 * 1.7 */
+  background: rgba(124,106,247,0.04);
+  border-left: 3px solid var(--accent-dim);
+  pointer-events: none;
+}
+[data-theme="light"] .app { box-shadow: none; }
+[data-theme="light"] .editor-wrap { background: #fafafa; }
+[data-theme="light"] .parent-line-bar { background:rgba(95,79,232,0.04); }
 
-  /* --- Dropdown Menu --- */
-  .dropdown-menu {
-    position: absolute;
-    bottom: calc(var(--footer-height) + 5px); 
-    left: 80px;
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-    display: none;
-    flex-direction: column;
-    z-index: 999;
-    max-height: 200px;
-    overflow-y: auto;
-  }
+#editor {
+  flex:1;
+  background: transparent;
+  border: none; outline: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;   /* overridden by JS */
+  line-height: 1.7;
+  resize: none;
+  padding: 18px 20px 20px 20px;
+  caret-color: var(--accent);
+  overflow-y: auto;
+}
+#editor::placeholder { color:var(--text-faint); }
+#editor::-webkit-scrollbar { width:4px; }
+#editor::-webkit-scrollbar-thumb { background:var(--scroll); border-radius:2px; }
 
-  .dropdown-menu.active { display: flex; }
+/* ==============================
+   BOTTOM BAR
+   ============================== */
+.bottombar {
+  display: flex; align-items: center; gap:8px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
 
-  .dropdown-item {
-    padding: 10px 15px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: left;
-    font-size: 14px;
-    transition: background 0.2s;
-  }
+/* Hide shortcut hints on narrow screens */
+.hints { display:flex; gap:10px; flex:1; flex-wrap:wrap; }
+.hint  { font-size:10px; color:var(--text-faint); display:flex; align-items:center; gap:4px; }
+.hint kbd {
+  background: var(--surface3); border:1px solid var(--border);
+  border-radius:3px; padding:1px 5px;
+  font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--text-dim);
+}
+@media (max-width: 600px) {
+  .hints  { display: none; }
+  .ccount { margin-right: auto; }
+  .bottombar { justify-content: flex-end; }
+}
 
-  .dropdown-item:hover { background: #f0f0f0; }
-  .dropdown-item:active { background: #e0e0e0; }
+/* ── Mobile topbar ── */
+@media (max-width: 600px) {
+  .topbar       { gap: 6px; padding: 7px 10px; }
+  .logo         { font-size: 11px; }
+  .sep          { display: none; }
+  .dest-label   { display: none; }
+  .dest-select  { max-width: 120px; font-size: 11px; padding: 3px 5px; height: 28px; }
+  .sq-btn       { width: 28px; height: 28px; }
+  .icon-btn     { padding: 0 8px; height: 28px; font-size: 0; gap: 0; }
+  .icon-btn svg { width: 15px; height: 15px; }
+  .status-msg   { max-width: 100px; font-size: 10px; padding: 2px 6px; }
+}
 
-  /* --- Options Panel --- */
-  .options-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    z-index: 1000;
-    overflow: hidden;
-  }
+.ccount { font-size:10px; color:var(--text-faint); flex-shrink:0; }
 
-  .options-panel.active { display: flex; }
+/* ── Unified bottom-button height: 32px ── */
+.stamp-btn {
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--text-dim);
+  height: 32px;
+  padding: 0 12px;
+  border-radius:4px;
+  cursor:pointer; transition:all 0.15s; flex-shrink:0;
+  display:flex; align-items:center; gap:6px;
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+}
+.stamp-btn:hover { border-color:var(--border-hi); color:var(--text); }
+.stamp-btn svg { width:13px; height:13px; }
 
-  .options-content {
-    background: #fff;
-    width: 100%;
-    height: 100%;
-    max-width: var(--app-max-width); 
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  @media (min-width: 601px) {
-    .options-panel.active { align-items: center; justify-content: center; }
-    .options-content { height: 90%; border-radius: 8px; }
-  }
+.send-btn {
+  background: var(--accent); border:none; color:#fff;
+  font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600;
+  height: 32px;
+  padding: 0 18px;
+  border-radius:4px;
+  cursor:pointer; transition:all 0.15s; flex-shrink:0;
+  letter-spacing:0.04em;
+  display:flex; align-items:center; gap:7px;
+}
+.send-btn:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 4px 14px rgba(124,106,247,0.28); }
+.send-btn:active { transform:none; box-shadow:none; }
+.send-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; filter:none; }
+.send-btn svg { width:14px; height:14px; }
 
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner {
+  width:12px; height:12px;
+  border:2px solid rgba(255,255,255,0.3); border-top-color:#fff;
+  border-radius:50%; animation:spin 0.6s linear infinite; display:none;
+}
+.send-btn.loading .spinner { display:block; }
+.send-btn.loading .stxt    { opacity:0.5; }
 
-  .options-header {
-    padding: 15px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    background: var(--app-bg);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
+/* ==============================
+   MODAL
+   ============================== */
+.modal-bg {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none; align-items:center; justify-content:center;
+  z-index:100; backdrop-filter:blur(4px);
+}
+.modal-bg.open { display:flex; }
 
-  .options-header h3 {
-    margin: 0;
-    font-size: 18px;
-  }
+.modal {
+  background:var(--surface); border:1px solid var(--border-hi);
+  border-radius:8px; width:560px; max-width:95vw;
+  max-height:86vh; overflow:hidden;
+  display:flex; flex-direction:column;
+  box-shadow:0 24px 60px rgba(0,0,0,0.4);
+  animation:mIn 0.18s ease;
+  transition:background 0.2s;
+}
+@keyframes mIn {
+  from { opacity:0; transform:scale(0.96) translateY(8px); }
+  to   { opacity:1; transform:scale(1)    translateY(0); }
+}
+.modal-hd {
+  display:flex; align-items:center;
+  padding:14px 18px; border-bottom:1px solid var(--border); gap:10px;
+}
+.modal-ttl { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; letter-spacing:0.04em; flex:1; }
+.modal-cls {
+  background:none; border:none; color:var(--text-dim);
+  cursor:pointer; padding:4px; border-radius:3px; transition:color 0.15s;
+  display:flex; align-items:center;
+}
+.modal-cls:hover { color:var(--text); }
+.modal-cls svg { width:16px; height:16px; }
 
-  .options-body {
-    flex: 1;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    overflow-y: auto;
-  }
+.modal-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--surface2); }
+.modal-tab {
+  padding:8px 14px; font-size:10px; color:var(--text-dim);
+  cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s;
+  font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:0.08em;
+}
+.modal-tab:hover { color:var(--text); }
+.modal-tab.on { color:var(--accent); border-bottom-color:var(--accent); }
 
-  .options-section {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
+.modal-body { padding:18px; overflow-y:auto; flex:1; }
+.modal-body::-webkit-scrollbar { width:4px; }
+.modal-body::-webkit-scrollbar-thumb { background:var(--border); }
 
-  .options-section-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #555;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
-  }
+.tp { display:none; }
+.tp.on { display:block; }
 
-  .options-footer {
-    padding: 15px;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    flex-shrink: 0;
-    background: var(--app-bg);
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-  }
+/* form */
+.fld { margin-bottom:14px; }
+.fld > label {
+  display:block; font-size:10px; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:0.1em; margin-bottom:5px;
+}
+.fld input, .fld textarea, .fld select {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px;
+  padding:7px 10px; border-radius:4px; outline:none;
+  transition:border-color 0.15s, background 0.2s;
+}
+.fld input:focus, .fld textarea:focus, .fld select:focus { border-color:var(--accent); }
+.fld textarea { resize:vertical; min-height:76px; }
+.fld .sub { font-size:10px; color:var(--text-faint); margin-top:4px; text-transform:none; letter-spacing:0; }
 
-  h3 { margin: 0 0 10px 0; font-size: 18px; }
+.r2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.r3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 
-  .form-group { display: flex; flex-direction: column; gap: 5px; }
-  .form-label { font-size: 12px; font-weight: bold; color: #555; }
-  .form-input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+.sec-hd {
+  font-size:9px; text-transform:uppercase; letter-spacing:0.14em;
+  color:var(--text-faint); margin-bottom:10px; padding-bottom:5px;
+  border-bottom:1px solid var(--border);
+}
 
-  .template-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+.warn-box {
+  font-size:10px; color:var(--warn);
+  background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.2);
+  border-radius:4px; padding:7px 10px; margin-bottom:14px; line-height:1.55;
+}
 
-  .template-item {
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+/* dest list */
+.dlist { display:flex; flex-direction:column; gap:7px; margin-bottom:10px; }
+.ditem {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:4px; padding:9px 11px;
+  display:flex; align-items:center; gap:9px;
+  transition:background 0.2s;
+}
+.ditem.sys { border-left:3px solid var(--accent-dim); }
+.ditem-icon { color:var(--text-faint); flex-shrink:0; display:flex; }
+.ditem-icon svg { width:15px; height:15px; }
+.ditem-info { flex:1; min-width:0; }
+.ditem-name { font-size:12px; color:var(--text); }
+.ditem-uuid { font-size:10px; color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
+.badge {
+  font-size:9px; padding:1px 6px; border-radius:3px;
+  background:var(--accent-glow); color:var(--accent); border:1px solid var(--accent-dim);
+  text-transform:uppercase; letter-spacing:0.1em; flex-shrink:0;
+}
 
-  .template-item-header {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+/* tpl list */
+.tlist { display:flex; flex-direction:column; gap:7px; margin-bottom:10px; }
+.titem {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:4px; padding:9px 11px;
+  display:flex; align-items:flex-start; gap:9px;
+  transition:background 0.2s, border-color 0.15s;
+}
+.titem.is-default { border-color:var(--accent-dim); }
+.titem-info { flex:1; min-width:0; }
+.titem-name {
+  font-size:12px; color:var(--text); margin-bottom:3px;
+  display:flex; align-items:center; gap:6px;
+}
+.def-star { color:var(--accent); display:none; }
+.def-star svg { width:11px; height:11px; }
+.titem.is-default .def-star { display:inline-flex; }
+.titem-prev {
+  font-size:10px; color:var(--text-faint);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; white-space:pre-wrap;
+}
+.titem-acts { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
 
-  .template-item input {
-    flex: 1;
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 12px;
-  }
+/* buttons */
+.add-btn {
+  background:var(--surface2); border:1px dashed var(--border-hi);
+  color:var(--text-dim); font-family:'JetBrains Mono',monospace;
+  font-size:11px; padding:8px; border-radius:4px;
+  cursor:pointer; width:100%; text-align:center; transition:all 0.15s;
+}
+.add-btn:hover { border-color:var(--accent); color:var(--accent); }
 
-  .template-item textarea {
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: monospace;
-    height: 60px;
-    resize: vertical;
-  }
+.add-form {
+  background:var(--surface3); border:1px solid var(--border);
+  border-radius:4px; padding:13px; margin-top:7px; display:none;
+}
+.add-form.open { display:block; }
 
-  .btn-remove { background: var(--danger-color); color: white; padding: 4px 8px; font-size: 12px; }
-  .btn-add-tpl { background: var(--accent-color); color: white; padding: 8px 12px; font-size: 12px; }
+.brow { display:flex; gap:7px; justify-content:flex-end; margin-top:9px; }
 
-  .toast {
-    position: fixed; bottom: calc(var(--footer-height) + 30px); left: 50%; transform: translateX(-50%);
-    background: rgba(40,40,40,0.9); color: white;
-    padding: 8px 16px; border-radius: 20px; font-size: 14px;
-    opacity: 0; transition: opacity 0.3s; pointer-events: none;
-    white-space: nowrap; z-index: 999;
-  }
-  .toast.show { opacity: 1; }
+.pbtn {
+  background:var(--accent); border:none; color:#fff;
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+  padding:6px 13px; border-radius:4px; cursor:pointer; transition:filter 0.15s;
+}
+.pbtn:hover { filter:brightness(1.1); }
 
-  .spinner {
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 50%; border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 6px; display: none;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+.gbtn {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+  padding:6px 13px; border-radius:4px; cursor:pointer; transition:all 0.15s;
+}
+.gbtn:hover { border-color:var(--border-hi); color:var(--text); }
 
-  .modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 10px;
-  }
+.delbtn {
+  background:none; border:1px solid var(--border); color:var(--text-faint);
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  padding:3px 7px; border-radius:3px; cursor:pointer; transition:all 0.15s;
+}
+.delbtn:hover { border-color:var(--error); color:var(--error); }
 
-  /* iOS対策: セーフエリアのインセットを考慮（JSで上書きされるが念のため） */
-  @supports (padding: max(0px)) {
-    .bottom-bar {
-      padding-bottom: max(8px, env(safe-area-inset-bottom));
-      bottom: calc(env(safe-area-inset-bottom) + 0px);
-    }
-  }
+.usebtn {
+  background:var(--accent-glow); border:1px solid var(--accent-dim); color:var(--accent);
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  padding:3px 7px; border-radius:3px; cursor:pointer; transition:all 0.15s;
+}
+.usebtn:hover { background:var(--accent); color:#fff; }
 
+.defbtn {
+  background:none; border:1px solid var(--border); color:var(--text-faint);
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  padding:3px 7px; border-radius:3px; cursor:pointer; transition:all 0.15s;
+  display:flex; align-items:center; gap:3px;
+}
+.defbtn svg { width:10px; height:10px; }
+.defbtn:hover { border-color:var(--accent-dim); color:var(--accent); }
+.defbtn.on { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+
+/* ==============================
+   MISC
+   ============================== */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:var(--scroll); border-radius:3px; }
+::-webkit-scrollbar-track { background:transparent; }
 </style>
 </head>
 <body>
+<div class="app">
 
-<div class="app-container">
-  <div class="header">
-    <div class="app-title">Workflowy sender</div>
-    <div class="char-count">c:<span id="char-count">0</span></div>
+  <!-- ── TOP BAR ── -->
+  <div class="topbar">
+    <span class="logo">WF Send</span>
+    <div class="sep"></div>
+    <span class="dest-label">送信先</span>
+    <select class="dest-select" id="destSel"></select>
+    <div class="topbar-space"></div>
+    <span class="status-msg" id="stMsg"></span>
+
+    <!-- Theme toggle -->
+    <button class="sq-btn" id="themeBt" title="ライト/ダーク切替">
+      <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+
+    <!-- Settings -->
+    <button class="icon-btn" id="openCfg" title="設定 (Ctrl+,)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      設定
+    </button>
   </div>
 
-  <div class="main-area">
-    <div class="editor-wrapper">
-      <textarea id="editor-main" placeholder="入力してください..."></textarea>
-    </div>
+  <!-- ── TEMPLATE BAR ── -->
+  <div class="tplbar">
+    <span class="tplbar-lbl">Template</span>
+    <div id="tplChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
   </div>
 
-  <div class="bottom-bar">
-    <div class="btn-group">
-      <button class="btn btn-icon btn-secondary" id="btn-date" title="日付">📅</button>
-      <button class="btn btn-icon btn-secondary" id="btn-time-toggle" title="時刻">⏰</button>
-      <button class="btn btn-icon btn-secondary" id="btn-templates" title="テンプレート">📋</button>
-      <button class="btn btn-icon btn-danger" id="btn-clear" title="全削除">🗑️</button>
+  <!-- ── EDITOR ── -->
+  <div class="editor-wrap">
+    <div class="parent-line-bar" id="parentBar"></div>
+    <textarea id="editor"></textarea>
+  </div>
+
+  <!-- ── BOTTOM BAR ── -->
+  <div class="bottombar">
+    <div class="hints">
+      <span class="hint"><kbd>Ctrl+Enter</kbd> 送信</span>
+      <span class="hint"><kbd>Alt+T</kbd> スタンプ</span>
+      <span class="hint"><kbd>Ctrl+L</kbd> クリア</span>
     </div>
-    <div class="btn-group">
-      <button class="btn btn-secondary" id="btn-options">
-        <span class="btn-text">⚙️ 設定</span>
-        <span class="btn-icon">⚙️</span>
+    <span class="ccount" id="ccount">0</span>
+
+    <button class="stamp-btn" id="stampBt" title="タイムスタンプ挿入 (Alt+T)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Stamp
+    </button>
+
+    <button class="stamp-btn" id="clearBt" title="クリア (Ctrl+L)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6"/>
+        <path d="M14 11v6"/>
+        <path d="M9 6V4h6v2"/>
+      </svg>
+      Clear
+    </button>
+
+    <button class="send-btn" id="sendBt">
+      <div class="spinner"></div>
+      <span class="stxt" style="display:flex;align-items:center;gap:6px;">
+        送信
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="19" x2="12" y2="5"/>
+          <polyline points="5 12 12 5 19 12"/>
+        </svg>
+      </span>
+    </button>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ==============================
+     SETTINGS MODAL
+     ============================== -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-ttl">設定</span>
+      <button class="modal-cls" id="closeCfg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
       </button>
-      <button class="btn btn-primary" id="btn-send">
-        <div class="spinner" id="loading-spinner"></div>
-        <span>送信</span>
-      </button>
     </div>
-  </div>
-
-  <div class="dropdown-menu" id="templates-menu"></div>
-  <div class="toast" id="toast"></div>
-</div>
-
-<div class="options-panel" id="options-modal">
-  <div class="options-content">
-    <div class="options-header">
-      <h3>設定</h3>
-      <button class="btn btn-secondary" id="btn-close-opt">✕</button>
+    <div class="modal-tabs">
+      <div class="modal-tab on" data-tp="general">General</div>
+      <div class="modal-tab" data-tp="dests">送信先</div>
+      <div class="modal-tab" data-tp="tpls">Template</div>
     </div>
+    <div class="modal-body">
 
-    <div class="options-body">
-      <div class="options-section">
-        <div class="options-section-title">APIキー</div>
-        <div class="form-group">
-          <label class="form-label">Workflowy API Key (必須)</label>
-          <input type="password" class="form-input" id="opt-apikey" placeholder="API Keyを貼り付け">
+      <!-- GENERAL -->
+      <div class="tp on" id="tp-general">
+        <div class="warn-box">
+          ⚠️ ローカルHTMLからWorkFlowy APIを呼ぶ場合、CORS制限がかかることがあります。
+          「CORS Unblock」等のブラウザ拡張を使うか、別途プロキシをお使いください。
         </div>
-      </div>
-
-      <div class="options-section">
-        <div class="options-section-title">送信設定</div>
-        <div class="form-group">
-          <label class="form-label">親ノードID (デフォルト: inbox)</label>
-          <input type="text" class="form-input" id="opt-parentid" placeholder="inbox, home, etc...">
+        <div class="fld">
+          <label>API Key</label>
+          <input type="password" id="apiKey" placeholder="wf_xxxxxxxxxxxxxxxxxxxxxxxx">
+          <div class="sub">workflowy.com/api-key から取得</div>
         </div>
-
-        <div class="form-group">
-          <label class="form-label">送信位置</label>
-          <select class="form-input" id="opt-position">
-            <option value="top">Top (上に追加)</option>
-            <option value="bottom">Bottom (下に追加)</option>
+        <div class="r3">
+          <div class="fld">
+            <label>タイムスタンプ形式</label>
+            <input type="text" id="stFmt" value="HH:MM">
+            <div class="sub">HH 時 MM 分 SS 秒<br>YYYY 年 MO 月 DD 日</div>
+          </div>
+          <div class="fld">
+            <label>プレビュー</label>
+            <input type="text" id="stPrev" readonly style="color:var(--accent)">
+          </div>
+          <div class="fld">
+            <label>フォントサイズ</label>
+            <select id="fontSizeSel">
+              <option value="12">12px</option>
+              <option value="13">13px</option>
+              <option value="14">14px</option>
+              <option value="15" selected>15px</option>
+              <option value="16">16px</option>
+              <option value="17">17px</option>
+              <option value="18">18px</option>
+              <option value="20">20px</option>
+              <option value="22">22px</option>
+            </select>
+          </div>
+        </div>
+        <div class="fld">
+          <label>送信位置</label>
+          <select id="posSel">
+            <option value="top">先頭（top）</option>
+            <option value="bottom">末尾（bottom）</option>
           </select>
         </div>
-      </div>
-
-      <div class="options-section">
-        <div class="options-section-title">エディタ設定</div>
-        <div class="form-group">
-          <label class="form-label">フォントサイズ (px)</label>
-          <input type="number" class="form-input" id="opt-fontsize" min="12" max="24" value="16">
+        <div class="brow">
+          <button class="pbtn" id="saveGen">保存</button>
         </div>
       </div>
 
-      <div class="options-section">
-        <div class="form-group">
-          <label class="form-label">日付フォーマット (例: [YYYY-MM-DD])</label>
-          <input type="text" class="form-input" id="opt-datefmt">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">時刻フォーマット (例: [YYYY-MM-DD HH:mm])</label>
-          <input type="text" class="form-input" id="opt-timefmt">
+      <!-- DESTINATIONS -->
+      <div class="tp" id="tp-dests">
+        <p class="sec-hd">送信先一覧</p>
+        <div class="dlist" id="dlist"></div>
+        <button class="add-btn" id="openAddD">＋ 送信先を追加</button>
+        <div class="add-form" id="addDForm">
+          <div class="fld">
+            <label>名前</label>
+            <input type="text" id="nDName" placeholder="プロジェクト A">
+          </div>
+          <div class="fld">
+            <label>UUID または target key</label>
+            <input type="text" id="nDUUID" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            <div class="sub">WorkFlowyのURL末尾ID、またはtargets APIのキー（home等）</div>
+          </div>
+          <div class="brow">
+            <button class="gbtn" id="cancelAddD">キャンセル</button>
+            <button class="pbtn" id="saveAddD">追加</button>
+          </div>
         </div>
       </div>
 
-      <div class="options-section">
-        <div class="options-section-title">テンプレート</div>
-        <div class="template-list" id="template-list"></div>
-        <button class="btn btn-add-tpl" id="btn-add-template">+ テンプレート追加</button>
+      <!-- TEMPLATES -->
+      <div class="tp" id="tp-tpls">
+        <p class="sec-hd">テンプレート一覧 &nbsp;<span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-faint)">★ をデフォルトに設定すると起動時・送信後に自動適用</span></p>
+        <div class="tlist" id="tlist"></div>
+        <button class="add-btn" id="openAddT">＋ テンプレートを追加</button>
+        <div class="add-form" id="addTForm">
+          <div class="fld">
+            <label>テンプレート名</label>
+            <input type="text" id="nTName" placeholder="デイリーメモ">
+          </div>
+          <div class="fld">
+            <label>内容（1行目が親ノード）</label>
+            <textarea id="nTContent" placeholder="[HH:MM] デイリーメモ&#10;やること&#10;メモ"></textarea>
+            <div class="sub">[HH:MM][STAMP] などのプレースホルダーが使えます</div>
+          </div>
+          <div class="brow">
+            <button class="gbtn" id="cancelAddT">キャンセル</button>
+            <button class="pbtn" id="saveAddT">追加</button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="options-footer">
-      <button class="btn btn-secondary" id="btn-cancel-opt">キャンセル</button>
-      <button class="btn btn-primary" id="btn-save-opt">保存</button>
     </div>
   </div>
 </div>
 
 <script>
-/**
- * Workflowy Sender v7.0
- */
+// ==============================
+// STATE  (localStorage: 'wfqs_v2')
+// ==============================
+const SK = 'wfqs_v2';
+function loadSt() { try { return JSON.parse(localStorage.getItem(SK)) || {}; } catch { return {}; } }
+function saveSt() { localStorage.setItem(SK, JSON.stringify(st)); }
+const st = loadSt();
+if (!st.apiKey)                  st.apiKey      = '';
+if (!st.stFmt)                   st.stFmt       = 'HH:MM';
+if (!st.position)                st.position    = 'top';
+if (!st.theme)                   st.theme       = 'dark';
+if (!st.fontSize)                st.fontSize    = 15;
+if (st.defaultTpl === undefined) st.defaultTpl  = -1;
+if (!st.destinations)            st.destinations = [];
+if (!st.templates)               st.templates    = [];
 
-const STORAGE_KEY = 'workflowy_sender_config_v4';
-const API_URL = '/api/workflowy/nodes'; 
+// ==============================
+// ELEMENTS
+// ==============================
+const $ = id => document.getElementById(id);
+const editor  = $('editor');
+const destSel = $('destSel');
+const sendBt  = $('sendBt');
+const stMsg   = $('stMsg');
+const stFmtEl = $('stFmt');
+const stPrevEl= $('stPrev');
 
-const DEFAULT_TEMPLATES = [
-  { label: '標準', text: '' },
-  { label: '日記', text: '{{date}} ' },
-  { label: 'Todo', text: '- [ ] {{cursor}}' }
-];
-
-const DEFAULT_CONFIG = {
-  apiKey: '',
-  parentId: 'inbox',
-  position: 'top',
-  dateFormat: '[YYYY-MM-DD]',
-  timeFormat: '[YYYY-MM-DD HH:mm]',
-  fontSize: 16,
-  templates: DEFAULT_TEMPLATES
-};
-
-let config = { ...DEFAULT_CONFIG };
-
-let toggleState = {
-  active: false,
-  lastInsertedFormat: null, 
-  cursorStart: 0,
-  cursorEnd: 0
-};
-
-
-// --- DOM Elements ---
-const dom = {
-  editorMain: document.getElementById('editor-main'),
-  btnSend: document.getElementById('btn-send'),
-  btnClear: document.getElementById('btn-clear'),
-  btnOptions: document.getElementById('btn-options'),
-  btnDate: document.getElementById('btn-date'),
-  btnTimeToggle: document.getElementById('btn-time-toggle'), 
-  btnTemplates: document.getElementById('btn-templates'),
-  modal: document.getElementById('options-modal'),
-  btnSaveOpt: document.getElementById('btn-save-opt'),
-  btnCancelOpt: document.getElementById('btn-cancel-opt'),
-  btnCloseOpt: document.getElementById('btn-close-opt'),
-  spinner: document.getElementById('loading-spinner'),
-  toast: document.getElementById('toast'),
-  charCount: document.getElementById('char-count'),
-  optApiKey: document.getElementById('opt-apikey'),
-  optParentId: document.getElementById('opt-parentid'),
-  optPosition: document.getElementById('opt-position'),
-  optDateFmt: document.getElementById('opt-datefmt'),
-  optTimeFmt: document.getElementById('opt-timefmt'),
-  optFontSize: document.getElementById('opt-fontsize'),
-  templateList: document.getElementById('template-list'),
-  btnAddTemplate: document.getElementById('btn-add-template'),
-  templatesMenu: document.getElementById('templates-menu'),
-  
-  bottomBar: document.querySelector('.bottom-bar'), 
-  mainArea: document.querySelector('.main-area'),
-  appContainer: document.querySelector('.app-container'),
-};
-
-function init() {
-  loadConfig();
-  applyTemplate(config.templates[0]);
-  applyFontSize();
-  
-  // イベントリスナー設定
-  dom.btnSend.addEventListener('click', handleSend);
-  
-  // 🌟 キーボード非表示を防ぐ修正を再追加 
-  // mousedownでpreventDefault()を呼び出し、ボタンへのフォーカス移動とtextareaのblurを抑制する
-  dom.btnSend.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-  });
-  
-  dom.btnClear.addEventListener('click', () => {
-    dom.editorMain.value = '';
-    dom.editorMain.focus();
-    updateCharCount();
-  });
-  
-  dom.btnOptions.addEventListener('click', openOptions);
-  dom.btnSaveOpt.addEventListener('click', saveOptions);
-  dom.btnCancelOpt.addEventListener('click', closeOptions);
-  dom.btnCloseOpt.addEventListener('click', closeOptions);
-  
-  // 📅ボタン: 日付のみを挿入 (固定)
-  if (dom.btnDate) dom.btnDate.addEventListener('click', () => {
-    insertDateTime(config.dateFormat);
-    resetToggleState(); 
-  }); 
-  
-  // ⏰ボタン: 時刻のみを挿入 (固定)
-  if (dom.btnTimeToggle) dom.btnTimeToggle.addEventListener('click', () => {
-    insertDateTime(config.timeFormat);
-    resetToggleState(); 
-  }); 
-  
-  if (dom.btnTemplates) dom.btnTemplates.addEventListener('click', toggleTemplateMenu);
-  dom.btnAddTemplate.addEventListener('click', addTemplateItem);
-
-  dom.editorMain.addEventListener('keydown', handleKeydown);
-  dom.editorMain.addEventListener('input', updateCharCount);
-  
-  // トグル機能のためのリセットイベントリスナー
-  dom.editorMain.addEventListener('click', resetToggleState);
-  dom.editorMain.addEventListener('keyup', resetToggleState);
-  
-  // 修正: キーボード出現時の動的調整ロジックをバインド
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', debouncedAdjustBottomBarPosition);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    adjustBottomBarPosition();
-    
-    // アプリ再開時のレイアウト確定を待つため、遅延させて再調整する
-    setTimeout(adjustBottomBarPosition, 500); 
-  }
-
-  // 修正: ページロード完了後にfocusを確実に実行
-  window.addEventListener('load', () => {
-    dom.editorMain.focus();
-    dom.editorMain.select(); // iOSでキーボードを強制表示するためのselect追加
-  });
+// ==============================
+// THEME
+// ==============================
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  $('iconMoon').style.display = t === 'dark'  ? 'block' : 'none';
+  $('iconSun').style.display  = t === 'light' ? 'block' : 'none';
 }
-
-/**
- * 修正: PWA復帰時にfocusとレイアウトを再調整
- */
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible') {
-    dom.editorMain.focus();
-    dom.editorMain.select();
-    adjustBottomBarPosition();
-  }
-}
-
-/**
- * 修正: debounce関数を追加してresizeイベントの連続呼び出しを防ぐ
- */
-function debounce(func, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func(...args), delay);
-  };
-}
-
-const debouncedAdjustBottomBarPosition = debounce(adjustBottomBarPosition, 200);
-
-/**
- * 修正: キーボードの出現を検知し、bottom-barの位置を動的に調整する（iOS PWA再開対策）
- * bottom-bar をビジュアルビューポートの底に正確に追従させるロジックに修正。
- */
-function adjustBottomBarPosition() {
-  if (!window.visualViewport || !dom.bottomBar || !dom.mainArea) return;
-  
-  const visualHeight = window.visualViewport.height; 
-  const innerHeight = window.innerHeight;
-  
-  const footerHeightCSS = getComputedStyle(document.documentElement).getPropertyValue('--footer-height');
-  const footerHeight = parseFloat(footerHeightCSS.replace('px', ''));
-  
-  // innerHeight (レイアウトビューポート) がキーボードによって調整されることを前提とする。
-  const isKeyboardOpen = (innerHeight - visualHeight) > 100; // 閾値を上げて誤検知を防ぐ
-
-  requestAnimationFrame(() => { // スタイル更新をフレーム同期でちらつき防止
-    if (isKeyboardOpen) {
-      // bottom-bar がレイアウトビューポートの底からどれだけ離れるべきか
-      const offsetFromLayoutBottom = innerHeight - (window.visualViewport.offsetTop + visualHeight);
-      
-      // 🌟 修正: transitionを一時的に無効化し、位置合わせのラグを減らす
-      dom.bottomBar.style.transition = 'none';
-      
-      dom.bottomBar.style.bottom = `calc(${offsetFromLayoutBottom}px + env(safe-area-inset-bottom))`;
-      dom.mainArea.style.paddingBottom = `calc(${offsetFromLayoutBottom + footerHeight + 15}px + env(safe-area-inset-bottom))`;
-      
-    } else {
-      // 🌟 修正: transitionを戻す
-      dom.bottomBar.style.transition = 'bottom 0.2s ease-out';
-      dom.bottomBar.style.bottom = 'calc(env(safe-area-inset-bottom) + 0px)';
-      dom.mainArea.style.paddingBottom = `calc(15px + var(--footer-height) + env(safe-area-inset-bottom))`;
-    }
-  });
-}
-
-function updateCharCount() {
-  dom.charCount.textContent = dom.editorMain.value.length;
-}
-
-function applyFontSize() {
-  const fontSize = config.fontSize || 16;
-  dom.editorMain.style.fontSize = fontSize + 'px';
-}
-
-function handleKeydown(e) {
-  if ((e.ctrlKey || e.altKey) && e.key === 'Enter') { 
-    e.preventDefault();
-    handleSend();
-    return;
-  }
-  
-  if (e.altKey && (e.key === 't' || e.key === 'T' || e.key === 'ã‹')) { 
-    e.preventDefault();
-    insertDateOrTimeToggle(); 
-    return;
-  }
-}
-
-function resetToggleState() {
-  const isInputActive = dom.editorMain === document.activeElement;
-  if (!isInputActive) {
-    toggleState.active = false;
-    toggleState.lastInsertedFormat = null;
-    return;
-  }
-
-  const currentCursor = dom.editorMain.selectionStart;
-  if (toggleState.active && currentCursor !== toggleState.cursorEnd) {
-    toggleState.active = false;
-    toggleState.lastInsertedFormat = null;
-  }
-}
-
-function loadConfig() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      config = { ...DEFAULT_CONFIG, ...parsed };
-      if (!config.timeFormat) config.timeFormat = DEFAULT_CONFIG.timeFormat;
-      if (!config.fontSize) config.fontSize = DEFAULT_CONFIG.fontSize;
-    } catch (e) {
-      console.error(e);
-    }
-  }
-}
-
-function saveConfigToStorage() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-}
-
-function getFormattedDateTime(formatStr) {
-  const now = new Date();
-  const map = {
-    'YYYY': now.getFullYear(),
-    'YY': String(now.getFullYear()).slice(-2),
-    'MM': String(now.getMonth() + 1).padStart(2, '0'),
-    'M': now.getMonth() + 1,
-    'DD': String(now.getDate()).padStart(2, '0'),
-    'D': now.getDate(),
-    'HH': String(now.getHours()).padStart(2, '0'),
-    'H': now.getHours(),
-    'mm': String(now.getMinutes()).padStart(2, '0'),
-    'm': now.getMinutes()
-  };
-
-  let result = formatStr;
-  const keys = Object.keys(map).sort((a, b) => b.length - a.length);
-  keys.forEach(key => {
-    result = result.replace(new RegExp(key, 'g'), map[key]);
-  });
-  return result;
-}
-
-function insertDateTime(formatStr) {
-  const textArea = dom.editorMain;
-  const insertStr = getFormattedDateTime(formatStr);
-  const start = textArea.selectionStart;
-  const end = textArea.selectionEnd;
-  const value = textArea.value;
-
-  textArea.value = value.substring(0, start) + insertStr + value.substring(end);
-  
-  const newCursorPos = start + insertStr.length;
-  textArea.setSelectionRange(newCursorPos, newCursorPos);
-  
-  textArea.focus();
-  updateCharCount();
-
-  return { insertStr, start, end: newCursorPos };
-}
-
-function insertDateOrTimeToggle() {
-  const textArea = dom.editorMain;
-  let targetFormat = config.dateFormat; 
-
-  if (toggleState.active && toggleState.lastInsertedFormat) {
-    if (toggleState.lastInsertedFormat === config.dateFormat) {
-      targetFormat = config.timeFormat;
-    } else {
-      targetFormat = config.dateFormat;
-    }
-
-    const start = toggleState.cursorStart;
-    const end = toggleState.cursorEnd;
-    const value = textArea.value;
-    textArea.value = value.substring(0, start) + value.substring(end);
-    textArea.setSelectionRange(start, start); 
-  }
-
-  const { insertStr, start, end: newCursorPos } = insertDateTime(targetFormat);
-
-  toggleState.active = true;
-  toggleState.cursorStart = start;
-  toggleState.cursorEnd = newCursorPos;
-  toggleState.lastInsertedFormat = targetFormat;
-  
-  setTimeout(() => {
-    const currentCursorPos = textArea.selectionStart;
-    if (currentCursorPos !== newCursorPos) {
-      resetToggleState();
-    }
-  }, 100);
-}
-
-
-function convertToWorkflowyBullets(text) {
-  if (!text) return "";
-  return text.split('\n')
-    .map(line => line.trim() ? `- ${line}` : '')
-    .filter(line => line) 
-    .join('\n\n');
-}
-
-function processPlaceholders(text) {
-  if (!text) return "";
-  let res = text;
-  if (res.includes('{{date}}')) {
-    res = res.replace(/{{date}}/g, getFormattedDateTime(config.dateFormat));
-  }
-  if (res.includes('{{time}}')) {
-    res = res.replace(/{{time}}/g, getFormattedDateTime(config.timeFormat));
-  }
-  return res;
-}
-
-function applyTemplate(tpl) {
-  if (!tpl) return;
-  resetToggleState(); 
-  let mainContent = processPlaceholders(tpl.text || '');
-  const cursorMarker = '{{cursor}}';
-  
-  if (mainContent.includes(cursorMarker)) {
-    const cursorIndex = mainContent.indexOf(cursorMarker);
-    dom.editorMain.value = mainContent.replace(cursorMarker, '');
-    dom.editorMain.setSelectionRange(cursorIndex, cursorIndex);
-  } else {
-    dom.editorMain.value = mainContent;
-  }
-  dom.editorMain.focus();
-  updateCharCount();
-}
-
-function toggleTemplateMenu() {
-  dom.templatesMenu.classList.toggle('active');
-  renderTemplateMenu();
-}
-
-function renderTemplateMenu() {
-  dom.templatesMenu.innerHTML = '';
-  config.templates.forEach((tpl, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'dropdown-item';
-    btn.textContent = tpl.label || `Tpl ${idx+1}`;
-    btn.onclick = () => {
-      applyTemplate(tpl);
-      dom.templatesMenu.classList.remove('active');
-    };
-    dom.templatesMenu.appendChild(btn);
-  });
-}
-
-function openOptions() {
-  dom.optApiKey.value = config.apiKey || '';
-  dom.optParentId.value = config.parentId || 'inbox';
-  dom.optPosition.value = config.position || 'top';
-  dom.optDateFmt.value = config.dateFormat || '[YYYY-MM-DD]';
-  dom.optTimeFmt.value = config.timeFormat || '[YYYY-MM-DD HH:mm]';
-  dom.optFontSize.value = config.fontSize || 16; 
-  renderTemplateItems();
-  dom.modal.classList.add('active');
-  
-  dom.editorMain.blur(); 
-}
-
-function closeOptions() {
-  dom.modal.classList.remove('active');
-  
-  if (config.apiKey) {
-    dom.editorMain.focus();
-  }
-}
-
-function renderTemplateItems() {
-  dom.templateList.innerHTML = '';
-  config.templates.forEach((tpl, idx) => {
-    const item = document.createElement('div');
-    item.className = 'template-item';
-    
-    const header = document.createElement('div');
-    header.className = 'template-item-header';
-    
-    const labelInput = document.createElement('input');
-    labelInput.type = 'text';
-    labelInput.placeholder = 'テンプレート名';
-    labelInput.value = tpl.label || '';
-    labelInput.style.flex = '1';
-    
-    const btnRemove = document.createElement('button');
-    btnRemove.className = 'btn btn-remove';
-    btnRemove.textContent = '削除';
-    btnRemove.onclick = () => {
-      config.templates.splice(idx, 1);
-      renderTemplateItems();
-    };
-    
-    header.appendChild(labelInput);
-    header.appendChild(btnRemove);
-    
-    const textArea = document.createElement('textarea');
-    textArea.placeholder = 'テンプレート内容 ({{date}}, {{time}}, {{cursor}} が使用可能)';
-    textArea.value = tpl.text || '';
-    
-    item.appendChild(header);
-    item.appendChild(textArea);
-    
-    labelInput.addEventListener('input', (e) => {
-      config.templates[idx].label = e.target.value;
-    });
-    
-    textArea.addEventListener('input', (e) => {
-      config.templates[idx].text = e.target.value;
-    });
-    
-    dom.templateList.appendChild(item);
-  });
-}
-
-function addTemplateItem() {
-  config.templates.push({ label: '新規', text: '' });
-  renderTemplateItems();
-}
-
-function saveOptions() {
-  try {
-    config.apiKey = dom.optApiKey.value.trim();
-    config.parentId = dom.optParentId.value.trim() || 'inbox';
-    config.position = dom.optPosition.value;
-    config.dateFormat = dom.optDateFmt.value;
-    config.timeFormat = dom.optTimeFmt.value;
-    
-    const newFontSize = parseInt(dom.optFontSize.value, 10);
-    if (newFontSize >= 12 && newFontSize <= 24) {
-      config.fontSize = newFontSize;
-      applyFontSize(); 
-    } else {
-      config.fontSize = 16; 
-      applyFontSize();
-    }
-
-    saveConfigToStorage();
-    renderTemplateMenu();
-    showToast('設定を保存しました');
-    closeOptions();
-  } catch (e) {
-    console.error(e);
-    showToast('設定の保存に失敗しました。');
-  }
-}
-
-async function handleSend() {
-  const text = dom.editorMain.value;
-
-  if (!text.trim()) {
-    showToast('本文が空です');
-    return;
-  }
-  if (!config.apiKey) {
-    showToast('API Keyが設定されていません。設定を開きます。');
-    openOptions();
-    return;
-  }
-
-  dom.btnSend.disabled = true;
-  dom.spinner.style.display = 'inline-block';
-
-  resetToggleState(); 
-
-  const convertedName = convertToWorkflowyBullets(text);
-
-  const payload = {
-    parent_id: config.parentId,
-    name: convertedName,
-    position: config.position,
-    data: {
-      layoutMode: "bullets"
-    }
-  };
-  
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${config.apiKey}`
-  };
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Error ${response.status}: ${errText}`);
-    }
-
-    showToast('送信しました！');
-    // 成功時：テンプレート適用とフォーカス（キーボード維持）
-    applyTemplate(config.templates[0]); 
-
-  } catch (error) {
-    console.error('送信失敗:', error);
-    showToast('送信失敗: ' + error.message.substring(0, 50) + '...'); 
-  } finally {
-    dom.btnSend.disabled = false;
-    dom.spinner.style.display = 'none';
-    
-    // 🌟 修正2: 処理の完了を待ってから、確実にフォーカスを戻す
-    dom.editorMain.focus();
-  }
-}
-
-function showToast(msg) {
-  dom.toast.textContent = msg;
-  dom.toast.classList.add('show');
-  setTimeout(() => {
-    dom.toast.classList.remove('show');
-  }, 3000);
-}
-
-window.addEventListener('DOMContentLoaded', init);
-
-document.getElementById('options-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'options-modal') {
-    closeOptions();
-  }
+applyTheme(st.theme);
+$('themeBt').addEventListener('click', () => {
+  st.theme = st.theme === 'dark' ? 'light' : 'dark';
+  saveSt(); applyTheme(st.theme);
 });
 
-if (dom.templatesMenu) {
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#btn-templates') && !e.target.closest('#templates-menu')) {
-      dom.templatesMenu.classList.remove('active');
-    }
+// ==============================
+// FONT SIZE
+// ==============================
+function applyFontSize(px) {
+  editor.style.fontSize = px + 'px';
+  // Update parent-line-bar height to match one line
+  $('parentBar').style.height = (px * 1.7) + 'px';
+}
+applyFontSize(st.fontSize);
+
+// ==============================
+// TIMESTAMP
+// ==============================
+function fmtTs(fmt) {
+  const n = new Date();
+  return (fmt || 'HH:MM')
+    .replace('YYYY', n.getFullYear())
+    .replace('MO',   String(n.getMonth()+1).padStart(2,'0'))
+    .replace('DD',   String(n.getDate()).padStart(2,'0'))
+    .replace('HH',   String(n.getHours()).padStart(2,'0'))
+    .replace('MM',   String(n.getMinutes()).padStart(2,'0'))
+    .replace('SS',   String(n.getSeconds()).padStart(2,'0'));
+}
+function insertTs() {
+  const ts = fmtTs(st.stFmt);
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  editor.value = editor.value.slice(0,s) + ts + editor.value.slice(e);
+  editor.selectionStart = editor.selectionEnd = s + ts.length;
+  editor.focus(); refreshUI();
+}
+function updatePrev() { stPrevEl.value = fmtTs(stFmtEl.value || 'HH:MM'); }
+setInterval(updatePrev, 1000);
+stFmtEl.addEventListener('input', updatePrev);
+
+// ==============================
+// EDITOR UI & DRAFT PERSISTENCE
+// ==============================
+const DRAFT_KEY = 'wfqs_draft';
+
+function defaultTplText() {
+  if (st.defaultTpl >= 0 && st.templates[st.defaultTpl]) {
+    return applyTpl(st.templates[st.defaultTpl].content);
+  }
+  return '';
+}
+
+function saveDraft() {
+  const val = editor.value;
+  const def = defaultTplText();
+  // テンプレートのみ or 空欄ならドラフト削除、それ以外は保存
+  if (val.trim() === '' || val === def) {
+    localStorage.removeItem(DRAFT_KEY);
+  } else {
+    localStorage.setItem(DRAFT_KEY, val);
+  }
+}
+
+function refreshUI() {
+  $('ccount').textContent = editor.value.length + ' chars';
+}
+editor.addEventListener('input', () => { refreshUI(); saveDraft(); });
+
+// ==============================
+// DEFAULT TEMPLATE APPLY
+// ==============================
+function applyTpl(content) {
+  const ts = fmtTs(st.stFmt);
+  return content.replace(/\[HH:MM\]/g, ts).replace(/\[STAMP\]/g, ts);
+}
+function applyDefaultTpl() {
+  if (st.defaultTpl >= 0 && st.templates[st.defaultTpl]) {
+    const cnt = applyTpl(st.templates[st.defaultTpl].content);
+    editor.value = cnt;
+    refreshUI();
+  }
+}
+
+// ==============================
+// DEST SELECT
+// ==============================
+function buildDestSel() {
+  destSel.innerHTML = '';
+  const o = document.createElement('option');
+  o.value = 'inbox'; o.textContent = 'Inbox';
+  destSel.appendChild(o);
+  (st.destinations||[]).forEach(d => {
+    const op = document.createElement('option');
+    op.value = d.uuid; op.textContent = d.name;
+    destSel.appendChild(op);
   });
 }
 
-// 修正: debounce関数定義（上部に移動済み）
-function debounce(func, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func(...args), delay);
-  };
+// ==============================
+// TEMPLATE CHIPS
+// ==============================
+const STAR_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+
+function buildTplChips() {
+  const wrap = $('tplChips'); wrap.innerHTML = '';
+  (st.templates||[]).forEach((tpl, i) => {
+    const c = document.createElement('button');
+    c.className = 'tpl-chip' + (st.defaultTpl === i ? ' is-default' : '');
+    c.innerHTML = (st.defaultTpl === i ? STAR_SVG : '') + esc(tpl.name);
+    c.addEventListener('click', () => {
+      const cnt = applyTpl(tpl.content);
+      editor.value = cnt;
+      editor.selectionStart = editor.selectionEnd = cnt.length;
+      editor.focus(); refreshUI();
+    });
+    wrap.appendChild(c);
+  });
 }
+
+// ==============================
+// API
+// ==============================
+async function apiPost(path, body) {
+  // Netlifyプロキシ経由: /api/workflowy/nodes → https://workflowy.com/api/v1/nodes
+  const url = path === '/api/v1/nodes' ? '/api/workflowy/nodes' : path;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + st.apiKey },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`API ${r.status}: ${t.slice(0,120)}`);
+  }
+  return r.json();
+}
+
+// ==============================
+// SEND
+// ==============================
+async function doSend() {
+  const text = editor.value.trim();
+  if (!text) return;
+  if (!st.apiKey) { showSt('APIキーが未設定です', 'err'); openModal(); return; }
+
+  const lines = text.split('\n').filter(l => l.trim());
+  if (!lines.length) return;
+
+  // 1行目 = 親ノード
+  // 2行目以降 = 子ノード。"- " プレフィックスで bullets として送信
+  let name;
+  if (lines.length === 1) {
+    name = lines[0];
+  } else {
+    const children = lines.slice(1).map(l => '- ' + l.trim()).join('\n\n');
+    name = lines[0] + '\n\n' + children;
+  }
+
+  const parentId = destSel.value || 'inbox';
+
+  sendBt.classList.add('loading');
+  sendBt.disabled = true;
+  showSt('送信中...', 'loading');
+
+  try {
+    const data = await apiPost('/api/v1/nodes', {
+      parent_id: parentId,
+      name:      name,
+      position:  st.position || 'top'
+    });
+
+    if (data.item_id) {
+      showSt('送信完了', 'ok');
+      editor.value = '';
+      refreshUI();
+      // デフォルトテンプレートがあれば再適用
+      applyDefaultTpl();
+      editor.focus();
+    } else {
+      throw new Error(data.error || data.detail || JSON.stringify(data));
+    }
+  } catch (e) {
+    showSt('エラー: ' + e.message, 'err');
+  } finally {
+    sendBt.classList.remove('loading');
+    sendBt.disabled = false;
+  }
+}
+
+// ==============================
+// STATUS
+// ==============================
+let stTmr;
+function showSt(msg, type) {
+  stMsg.textContent = msg;
+  stMsg.className   = `status-msg show ${type}`;
+  clearTimeout(stTmr);
+  if (type !== 'loading') {
+    stTmr = setTimeout(() => { stMsg.className = 'status-msg'; }, 5000);
+  }
+}
+
+// ==============================
+// KEYBOARD SHORTCUTS
+// ==============================
+document.addEventListener('keydown', e => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  const alt  = e.altKey;
+  if      (ctrl && e.key === 'Enter') { e.preventDefault(); doSend(); }
+  else if (alt  && e.key === 't')     { e.preventDefault(); insertTs(); }
+  else if (ctrl && e.key === 'l')     { e.preventDefault(); editor.value=''; applyDefaultTpl(); refreshUI(); editor.focus(); }
+  else if (e.key === 'Escape')        closeModal();
+});
+
+// ==============================
+// MODAL
+// ==============================
+function openModal() {
+  $('apiKey').value        = st.apiKey;
+  stFmtEl.value            = st.stFmt;
+  $('posSel').value        = st.position;
+  $('fontSizeSel').value   = st.fontSize;
+  updatePrev();
+  buildDList();
+  buildTList();
+  $('modalBg').classList.add('open');
+}
+function closeModal() { $('modalBg').classList.remove('open'); }
+
+$('openCfg').addEventListener('click',  openModal);
+$('closeCfg').addEventListener('click', closeModal);
+$('modalBg').addEventListener('click',  e => { if (e.target === $('modalBg')) closeModal(); });
+
+document.querySelectorAll('.modal-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('on'));
+    document.querySelectorAll('.tp').forEach(p => p.classList.remove('on'));
+    tab.classList.add('on');
+    $('tp-' + tab.dataset.tp).classList.add('on');
+  });
+});
+
+$('saveGen').addEventListener('click', () => {
+  st.apiKey   = $('apiKey').value.trim();
+  st.stFmt    = stFmtEl.value || 'HH:MM';
+  st.position = $('posSel').value;
+  st.fontSize = parseInt($('fontSizeSel').value, 10);
+  saveSt();
+  applyFontSize(st.fontSize);
+  showSt('設定を保存しました', 'ok');
+  closeModal();
+});
+
+// ==============================
+// DESTINATIONS CRUD
+// ==============================
+const IC_INBOX  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`;
+const IC_FOLDER = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+function buildDList() {
+  const list = $('dlist'); list.innerHTML = '';
+  const sys = document.createElement('div');
+  sys.className = 'ditem sys';
+  sys.innerHTML = `
+    <div class="ditem-icon">${IC_INBOX}</div>
+    <div class="ditem-info">
+      <div class="ditem-name">Inbox</div>
+      <div class="ditem-uuid">key: inbox</div>
+    </div>
+    <span class="badge">system</span>`;
+  list.appendChild(sys);
+
+  (st.destinations||[]).forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'ditem';
+    el.innerHTML = `
+      <div class="ditem-icon">${IC_FOLDER}</div>
+      <div class="ditem-info">
+        <div class="ditem-name">${esc(d.name)}</div>
+        <div class="ditem-uuid">${esc(d.uuid)}</div>
+      </div>
+      <button class="delbtn">削除</button>`;
+    el.querySelector('.delbtn').addEventListener('click', () => {
+      st.destinations.splice(i, 1); saveSt(); buildDList(); buildDestSel();
+    });
+    list.appendChild(el);
+  });
+}
+
+$('openAddD').addEventListener('click',   () => $('addDForm').classList.toggle('open'));
+$('cancelAddD').addEventListener('click', () => $('addDForm').classList.remove('open'));
+$('saveAddD').addEventListener('click', () => {
+  const name = $('nDName').value.trim();
+  const uuid = $('nDUUID').value.trim();
+  if (!name || !uuid) return;
+  st.destinations.push({ name, uuid });
+  saveSt(); buildDList(); buildDestSel();
+  $('nDName').value = ''; $('nDUUID').value = '';
+  $('addDForm').classList.remove('open');
+});
+
+// ==============================
+// TEMPLATES CRUD
+// ==============================
+function buildTList() {
+  const list = $('tlist'); list.innerHTML = '';
+  if (!st.templates.length) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--text-faint);padding:6px 0">テンプレートがありません</div>';
+    return;
+  }
+  st.templates.forEach((tpl, i) => {
+    const isDefault = st.defaultTpl === i;
+    const el = document.createElement('div');
+    el.className = 'titem' + (isDefault ? ' is-default' : '');
+    el.innerHTML = `
+      <div class="titem-info">
+        <div class="titem-name">
+          <span class="def-star" title="デフォルト">${STAR_SVG}</span>
+          ${esc(tpl.name)}
+        </div>
+        <div class="titem-prev">${esc(tpl.content)}</div>
+      </div>
+      <div class="titem-acts">
+        <button class="usebtn">使用</button>
+        <button class="defbtn ${isDefault ? 'on' : ''}" title="${isDefault ? 'デフォルト解除' : 'デフォルトに設定'}">
+          ${STAR_SVG}
+        </button>
+        <button class="delbtn">削除</button>
+      </div>`;
+
+    el.querySelector('.usebtn').addEventListener('click', () => {
+      const c = applyTpl(tpl.content);
+      editor.value = c; editor.selectionStart = editor.selectionEnd = c.length;
+      refreshUI(); editor.focus(); closeModal();
+    });
+    el.querySelector('.defbtn').addEventListener('click', () => {
+      st.defaultTpl = isDefault ? -1 : i;
+      saveSt(); buildTList(); buildTplChips();
+    });
+    el.querySelector('.delbtn').addEventListener('click', () => {
+      if (st.defaultTpl === i) st.defaultTpl = -1;
+      else if (st.defaultTpl > i) st.defaultTpl--;
+      st.templates.splice(i, 1); saveSt(); buildTList(); buildTplChips();
+    });
+    list.appendChild(el);
+  });
+}
+
+$('openAddT').addEventListener('click',   () => $('addTForm').classList.toggle('open'));
+$('cancelAddT').addEventListener('click', () => $('addTForm').classList.remove('open'));
+$('saveAddT').addEventListener('click', () => {
+  const name = $('nTName').value.trim();
+  const cnt  = $('nTContent').value;
+  if (!name || !cnt.trim()) return;
+  st.templates.push({ name, content: cnt });
+  saveSt(); buildTList(); buildTplChips();
+  $('nTName').value = ''; $('nTContent').value = '';
+  $('addTForm').classList.remove('open');
+});
+
+// ==============================
+// UTIL
+// ==============================
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ==============================
+// BINDINGS
+// ==============================
+sendBt.addEventListener('click',       doSend);
+$('stampBt').addEventListener('click', insertTs);
+$('clearBt').addEventListener('click', () => { editor.value = ''; applyDefaultTpl(); refreshUI(); editor.focus(); });
+
+// ==============================
+// INIT
+// ==============================
+buildDestSel();
+buildTplChips();
+refreshUI();
+updatePrev();
+
+// ドラフトがあれば復元、なければデフォルトテンプレートを適用
+const savedDraft = localStorage.getItem(DRAFT_KEY);
+if (savedDraft !== null) {
+  editor.value = savedDraft;
+  refreshUI();
+} else {
+  applyDefaultTpl();
+}
+
+editor.focus();
 </script>
 </body>
 </html>

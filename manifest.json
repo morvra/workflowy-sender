@@ -1,0 +1,17 @@
+{
+  "name": "WorkFlowy Quick Send",
+  "short_name": "WF Send",
+  "description": "WorkFlowy へすばやくノードを送信",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0e0e11",
+  "theme_color": "#7c6af7",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
